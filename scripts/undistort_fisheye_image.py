@@ -27,10 +27,12 @@ def image_cb(msg):
     sub_img_distorted = cv2.cvtColor(sub_img_distorted, cv2.COLOR_BGR2RGB)
     sub_img = cv2.fisheye.undistortImage(sub_img_distorted, K, D, Knew = K)
     cv2.imshow('screen', sub_img)
+    msg = bridge.cv2_to_imgmsg(sub_img, encoding="bgr8")
+    image_pub.publish(msg)
     cv2.waitKey(1)
 
 rospy.init_node('imshow_distort_fisheye_camera')
-
+image_pub = rospy.Publisher('undistort/camera/rgb/image_raw', Image, queue_size=10)
 image_topic = rospy.get_param('~image_topic')
 config_file = rospy.get_param('~config_file')
 
