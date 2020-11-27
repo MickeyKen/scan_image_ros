@@ -30,6 +30,7 @@ def callback(scan, image,b):
     rospy.loginfo("scan timestamp: %d ns" % scan.header.stamp.to_nsec())
     diff = abs(image.header.stamp.to_nsec() - scan.header.stamp.to_nsec())
     rospy.loginfo("diff: %d ns" % diff)
+
     img = bridge.imgmsg_to_cv2(image)
     cloud = lp.projectLaser(scan)
     points = pc2.read_points(cloud)
@@ -41,6 +42,11 @@ def callback(scan, image,b):
     elif lens == 'fisheye':
         objPoints = np.reshape(objPoints, (1,objPoints.shape[0],objPoints.shape[1]))
         img_points, _ = cv2.fisheye.projectPoints(objPoints, rvec, tvec, K, D)
+
+    for bound in b.bounding_boxes:
+        if bound.Class == "person":
+            cv2.rectangle(img,(bound.xmin,bound.ymin),(bound.xmax,bound.ymax),(200,100,100),3)
+
     img_points = np.squeeze(img_points)
     for i in range(len(img_points)):
         try:
