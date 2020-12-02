@@ -1,0 +1,9 @@
+<launch>
+
+    <node name="imshow_undistort_fisheye_image" pkg="scan_image_ros" type="open_fisheye_camera.py" output="screen">
+        <param name="image_topic" value="/camera/color/image_raw" />
+        <param name="config_file" value="$(find scan_image_ros)/config/config_HD.yaml" />
+    </node>
+
+
+</launch>

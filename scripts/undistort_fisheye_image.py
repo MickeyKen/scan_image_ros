@@ -32,7 +32,7 @@ def image_cb(msg):
     cv2.waitKey(1)
 
 rospy.init_node('imshow_distort_fisheye_camera')
-image_pub = rospy.Publisher('undistort/camera/rgb/image_raw', Image, queue_size=10)
+image_pub = rospy.Publisher('camera/color/image_raw', Image, queue_size=10)
 image_topic = rospy.get_param('~image_topic')
 config_file = rospy.get_param('~config_file')
 
