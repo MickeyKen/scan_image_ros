@@ -56,6 +56,7 @@ def operator():
         undistort_img = cv2.fisheye.undistortImage(frame, K, D, Knew = K)
         msg = bridge.cv2_to_imgmsg(undistort_img, encoding="bgr8")
         # msg = bridge.cv2_to_imgmsg(frame, encoding="bgr8")
+        msg.header.stamp = rospy.Time.now()
         pub.publish(msg)
         rate.sleep()
 
