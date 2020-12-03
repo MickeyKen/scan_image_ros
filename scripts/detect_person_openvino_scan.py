@@ -11,6 +11,7 @@ from sensor_msgs.msg import Image, LaserScan, PointCloud2
 import laser_geometry.laser_geometry as lg
 import sensor_msgs.point_cloud2 as pc2
 from object_msgs.msg import ObjectsInBoxes
+from geometry_msgs.msg import Pose, PoseArray
 
 def get_z(T_cam_world, T_world_pc, K):
     R = T_cam_world[:3,:3]
@@ -56,17 +57,48 @@ def callback(scan,image, vino):
                 if x_max < w and y_max < h:
                     max_probability = box.object.probability
                     max_human_pos = [x_min,y_min,x_max,y_max]
-    if len(max_human_pos) == 4:
-            cv2.rectangle(img,(int(round(max_human_pos[0])),int(round(max_human_pos[1]))),(int(round(max_human_pos[2])),int(round(max_human_pos[3]))),(200,0,20),3)
 
-            img_points = np.squeeze(img_points)
-            for i in range(len(img_points)):
-                if int(round(img_points[i][0])) > int(round(max_human_pos[0])) and int(round(img_points[i][0])) < int(round(max_human_pos[2])):
-                    if int(round(img_points[i][1])) > int(round(max_human_pos[1])) and int(round(img_points[i][1])) < int(round(max_human_pos[3])):
-                        try:
-                            cv2.circle(img, (int(round(img_points[i][0])),int(round(img_points[i][1]))), laser_point_radius, (0,255,0), 1)
-                        except OverflowError:
-                            continue
+    if len(max_human_pos) == 4:
+        index_x_min = 1200
+        index_x_max = 0
+        posearray_msg = PoseArray()
+
+        cv2.rectangle(img,(int(round(max_human_pos[0])),int(round(max_human_pos[1]))),(int(round(max_human_pos[2])),int(round(max_human_pos[3]))),(200,0,20),3)
+
+        img_points = np.squeeze(img_points)
+        for i in range(len(img_points)):
+            if int(round(img_points[i][0])) > int(round(max_human_pos[0])) and int(round(img_points[i][0])) < int(round(max_human_pos[2])):
+                if int(round(img_points[i][1])) > int(round(max_human_pos[1])) and int(round(img_points[i][1])) < int(round(max_human_pos[3])):
+                    if i < index_x_min:
+                        index_x_min = i
+                    if i > index_x_max:
+                        index_x_max = i
+                    try:
+                        cv2.circle(img, (int(round(img_points[i][0])),int(round(img_points[i][1]))), laser_point_radius, (0,255,0), 1)
+                    except OverflowError:
+                        continue
+
+        detect_objPoints = objPoints[index_x_min:index_x_max]
+        if len(detect_objPoints) == 0:
+            print "vacant"
+        else:
+
+            for p in detect_objPoints[0]:
+                pose_msg = Pose()
+                print "-----------------------------"
+
+                pose_msg.position.x = p[0]
+                pose_msg.position.y = p[1]
+                pose_msg.orientation.w = 1
+                posearray_msg.poses.append(pose_msg)
+
+
+        posearray_msg.header.frame_id = "/base_scan"
+        posearray_msg.header.stamp = rospy.Time.now()
+        print posearray_msg
+        pose_pub.publish(posearray_msg)
+
+        print detect_objPoints
 
     else:
         pass
@@ -125,6 +157,7 @@ print("D =")
 print(D)
 
 pub = rospy.Publisher("/reprojection", Image, queue_size=1)
+pose_pub = rospy.Publisher("/scan/detect_leg_person", PoseArray, queue_size=1)
 scan_sub = message_filters.Subscriber(scan_topic, LaserScan, queue_size=1)
 image_sub = message_filters.Subscriber(image_topic, Image, queue_size=1)
 vino_sub = message_filters.Subscriber("/ros_openvino_toolkit/detected_objects", ObjectsInBoxes, queue_size=1)
