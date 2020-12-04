@@ -82,7 +82,7 @@ def callback(scan,image, vino):
         detect_objPoints = objPoints[0][index_x_min:index_x_max]
         print detect_objPoints
         if len(detect_objPoints) == 0:
-            # print "vacant"
+            print "vacant"
         else:
             count = 0
 
