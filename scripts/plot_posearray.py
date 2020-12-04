@@ -15,7 +15,7 @@ def plot(pose):
     ps = []
 
     for i in range(len(pose.poses)):
-        ps.append([pose.poses[i].position.x,pose.poses[i].position.y])
+        ps.append([pose.poses[i].position.x, pose.poses[i].position.y])
     # print ps
 
     return ps
@@ -26,8 +26,8 @@ if __name__ == '__main__':
     while True:
         plt.ion()
         plt.title('HEATMAP')
-        plt.xlim(-10,10)
-        plt.ylim(-10,10)
+        plt.xlim(-4,4)
+        plt.ylim(0,5)
         plt.grid()
 
         try:
@@ -35,7 +35,7 @@ if __name__ == '__main__':
             points = plot(data)
 
             for p in points:
-                plt.plot(p[0] ,p[1] , 'o', color="blue", markersize=3)
+                plt.plot(p[0] ,p[1] , 'o', color="blue", markersize=1)
         except:
             pass
 

@@ -69,21 +69,25 @@ def callback(scan,image, vino):
         for i in range(len(img_points)):
             if int(round(img_points[i][0])) > int(round(max_human_pos[0])) and int(round(img_points[i][0])) < int(round(max_human_pos[2])):
                 if int(round(img_points[i][1])) > int(round(max_human_pos[1])) and int(round(img_points[i][1])) < int(round(max_human_pos[3])):
-                    if i < index_x_min:
+                    if int(round(img_points[i][0])) < index_x_min:
                         index_x_min = i
-                    if i > index_x_max:
+                    if int(round(img_points[i][0])) > index_x_max:
                         index_x_max = i
                     try:
                         cv2.circle(img, (int(round(img_points[i][0])),int(round(img_points[i][1]))), laser_point_radius, (0,255,0), 1)
                     except OverflowError:
                         continue
+        # print ("MIN: ", index_x_min , ",MAX: ", index_x_max)
 
-        detect_objPoints = objPoints[index_x_min:index_x_max]
+        detect_objPoints = objPoints[0][index_x_min:index_x_max]
+        print detect_objPoints
         if len(detect_objPoints) == 0:
-            print "vacant"
+            # print "vacant"
         else:
+            count = 0
 
-            for p in detect_objPoints[0]:
+            for p in detect_objPoints:
+                count += 1
                 pose_msg = Pose()
                 print "-----------------------------"
 
@@ -92,13 +96,11 @@ def callback(scan,image, vino):
                 pose_msg.orientation.w = 1
                 posearray_msg.poses.append(pose_msg)
 
-
         posearray_msg.header.frame_id = "/base_scan"
         posearray_msg.header.stamp = rospy.Time.now()
-        print posearray_msg
+
         pose_pub.publish(posearray_msg)
 
-        print detect_objPoints
 
     else:
         pass
