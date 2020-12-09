@@ -47,7 +47,7 @@ def callback(scan,image, vino):
 
     max_probability = 0.0
     max_human_pos = []
-    # rect_msg = ObjectsInBoxes()
+    rect_msg = ObjectsInBoxes()
 
     for box in vino.objects_vector:
         if box.object.object_name == "person":
@@ -57,23 +57,11 @@ def callback(scan,image, vino):
                 x_max = box.roi.x_offset + box.roi.width
                 y_max = box.roi.y_offset + box.roi.height
                 if x_max < w and y_max < h:
-                    # rect_msg.objects_vector = box
+                    rect_msg.objects_vector = box
                     max_probability = box.object.probability
                     max_human_pos = [x_min,y_min,x_max,y_max]
 
     if len(max_human_pos) == 4:
-        kimg = img[y_min : y_max, x_min : x_max]
-        h, w, c = img.shape
-        h2, w2, c2 = kimg.shape
-        scale = float(h2)/float(h)
-        resize_img = cv2.resize(kimg, dsize=None, fx=scale, fy=scale, interpolation = cv2.INTER_AREA)
-        resize_msg = bridge.cv2_to_imgmsg((resize_img), encoding="bgr8")
-        resize_msg.header.stamp = rospy.Time.now()
-        vino_image_pub.publish(resize_msg)
-
-
-
-
         index_x_min = 1200
         index_x_max = 0
         posearray_msg = PoseArray()
@@ -114,10 +102,10 @@ def callback(scan,image, vino):
         posearray_msg.header.frame_id = "/base_scan"
         posearray_msg.header.stamp = rospy.Time.now()
 
-        # rect_msg.header.stamp = rospy.Time.now()
+        rect_msg.header.stamp = rospy.Time.now()
 
         pose_pub.publish(posearray_msg)
-        # rect_pub.publish(rect_msg)
+        rect_pub.publish(rect_msg)
 
 
     else:
@@ -176,8 +164,7 @@ print(K)
 print("D =")
 print(D)
 
-pub = rospy.Publisher("/human_head_image", Image, queue_size=1)
-vino_image_pub = rospy.Publisher("/resize/camera/color/image_raw", Image, queue_size=1)
+pub = rospy.Publisher("/reprojection", Image, queue_size=1)
 pose_pub = rospy.Publisher("/scan/detect_leg_person", PoseArray, queue_size=1)
 rect_pub = rospy.Publisher("/openvino/person_rect", ObjectsInBoxes, queue_size=1)
 scan_sub = message_filters.Subscriber(scan_topic, LaserScan, queue_size=1)

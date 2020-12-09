@@ -1,0 +1,19 @@
+<launch>
+
+    <node name="imshow_undistort_fisheye_image" pkg="scan_image_ros" type="open_fisheye_camera.py" output="screen">
+        <param name="image_topic" value="/camera/color/image_raw" />
+        <param name="config_file" value="$(find scan_image_ros)/config/config_HD.yaml" />
+    </node>
+
+    <node name="detect_person_yolo_scan" pkg="scan_image_ros" type="detect_person_openvino_scan.py" output="screen">
+        <param name="scan_topic" value="/scan" />
+        <param name="image_topic" value="/camera/color/image_raw" />
+        <param name="calib_file" value="$(find scan_image_ros)/data/calibration_result.txt" />
+        <param name="config_file" value="$(find scan_image_ros)/config/config_HD.yaml" />
+        <param name="laser_point_radius" type="int" value="3" />    <!-- Reprojected laser point radius size in pixels -->
+        <param name="time_diff" type="double" value="1" />  <!-- Maximum time difference in seconds between image and laser scan to be registered and processed -->
+    </node>
+
+    <node name="leg_filtering_kmenas" pkg="scan_image_ros" type="kmeans_clustering.py" output="screen" />
+
+</launch>
