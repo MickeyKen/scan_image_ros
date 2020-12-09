@@ -7,7 +7,7 @@ import sensor_msgs.point_cloud2 as pc2
 
 import matplotlib.pyplot as plt
 import math
-
+from geometry_msgs.msg import PoseStamped, PointStamped
 from sklearn.cluster import KMeans
 
 def extract(point):
@@ -37,6 +37,7 @@ if __name__ == '__main__':
             data = rospy.wait_for_message('/scan/detect_leg_person', PoseArray, timeout=1)
             points = plot(data)
             # print points
+            pub = message_filters.Subscriber("target_point", PointStamped, queue_size=1)
 
             km = KMeans(n_clusters=k, init='random')
             g = km.fit_predict(points)
@@ -59,29 +60,31 @@ if __name__ == '__main__':
             distance0 = math.hypot(output0_x_ave, output0_y_ave)
             distance1 = math.hypot(output1_x_ave, output1_y_ave)
 
+
             if distance0 > distance1:
                 print "defeat output1"
                 plt.plot(output1_x_ave ,output1_y_ave , 'o', color="#CCCCFF", markersize=90, alpha=0.5)
-                # plt.plot(output1_x_ave ,output1_y_ave , 'o', color="red", markersize=40, fill=false)
-                # plt.Circle((output1_x_ave, output1_y_ave), 50, color='red', fill=False)
+                msg = PointStamped()
+                msg.x = output1_x_ave
+                msg.y = output1_y_ave
+                msg.header.frame_id = "/base_scan"
+                msg.header.stamp = rospy.Time.now()
+                pub.publish(msg)
             else:
                 print "defeat output0"
                 plt.plot(output0_x_ave ,output0_y_ave , 'o', color="#CCCCFF", markersize=90, alpha=0.5)
-                # plt.plot(output0_x_ave ,output0_y_ave , 'o', color="red", markersize=40, fill=false)
-                # plt.Circle((output0_x_ave, output0_y_ave), 50, color='red', fill=False)
-            # print(np.mean(output0, axis=0))
-            # print(np.mean(output0, axis=1))
+                msg = PointStamped()
+                msg.x = output0_x_ave
+                msg.y = output0_y_ave
+                msg.header.frame_id = "/base_scan"
+                msg.header.stamp = rospy.Time.now()
+                pub.publish(msg)
 
-                # for i in index:
-                #     print i
-
-            # output0 = [points[x] for x in range(np.where(g==0))]
-            # print output0
-            # print g
             for ell in range(k):
                 plt.scatter(points[g==ell,0], points[g==ell,1], s=2,color=cmap(ell))
         except:
-            pass
+            print "error"
+            # pass
 
         plt.draw()
         plt.pause(0.1)
