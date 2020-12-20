@@ -13,6 +13,11 @@ import sensor_msgs.point_cloud2 as pc2
 from object_msgs.msg import ObjectsInBoxes
 from geometry_msgs.msg import Pose, PoseArray
 
+HSV_MIN = np.array([0, 30, 60])
+HSV_MAX = np.array([20, 150, 255])
+
+FACE_HEIGHT = 20
+
 def get_z(T_cam_world, T_world_pc, K):
     R = T_cam_world[:3,:3]
     t = T_cam_world[:3,3]
@@ -31,6 +36,8 @@ def callback(scan,image, vino):
     rospy.loginfo("scan timestamp: %d ns" % scan.header.stamp.to_nsec())
     diff = abs(image.header.stamp.to_nsec() - scan.header.stamp.to_nsec())
     rospy.loginfo("diff: %d ns" % diff)
+
+    human = False
 
     img = bridge.imgmsg_to_cv2(image)
     h, w, _ = img.shape
@@ -62,11 +69,33 @@ def callback(scan,image, vino):
                     max_human_pos = [x_min,y_min,x_max,y_max]
 
     if len(max_human_pos) == 4:
-        kimg = img[y_min : y_max, x_min : x_max]
+        kimg = img[y_min : (y_max-y_min)/4 + y_min, x_min : x_max]
         h, w, c = img.shape
         h2, w2, c2 = kimg.shape
-        scale = float(h2)/float(h)
+
+        scale = float(640)/float(h2)
         resize_img = cv2.resize(kimg, dsize=None, fx=scale, fy=scale, interpolation = cv2.INTER_AREA)
+
+        hsv_image = cv2.cvtColor(resize_img, cv2.COLOR_BGR2HSV)
+        hsv_mask = cv2.inRange(hsv_image, HSV_MIN, HSV_MAX)
+        label = cv2.connectedComponentsWithStats(hsv_mask)
+        n = label[0] - 1
+        data = np.delete(label[2], 0, 0)
+        center = np.delete(label[3], 0, 0)
+        print resize_img.shape
+        for i in range(n):
+            x0 = data[i][0]
+            y0 = data[i][1]
+            x1 = data[i][0] + data[i][2]
+            y1 = data[i][1] + data[i][3]
+            if (y1-y0) > 200:
+                cv2.rectangle(resize_img, (x0, y0), (x1, y1), (0, 0, 255))
+                human = True
+                cv2.putText(resize_img, "ID: " +str(i + 1), (x1 - 20, y1 + 15), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 255))
+                cv2.putText(resize_img, "S: " +str(data[i][4]), (x1 - 20, y1 + 30), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 255))
+
+                cv2.putText(resize_img, "X: " + str(int(center[i][0])), (x1 - 30, y1 + 15), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 255))
+                cv2.putText(resize_img, "Y: " + str(int(center[i][1])), (x1 - 30, y1 + 30), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 255))
         resize_msg = bridge.cv2_to_imgmsg((resize_img), encoding="bgr8")
         resize_msg.header.stamp = rospy.Time.now()
         vino_image_pub.publish(resize_msg)
@@ -109,6 +138,8 @@ def callback(scan,image, vino):
                 pose_msg.position.x = p[0]
                 pose_msg.position.y = p[1]
                 pose_msg.orientation.w = 1
+                if human:
+                    pose_msg.position.z = 1
                 posearray_msg.poses.append(pose_msg)
 
         posearray_msg.header.frame_id = "/base_scan"
